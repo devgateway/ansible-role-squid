@@ -1,0 +1,54 @@
+{%- macro squid_format_percent(value) -%}
+  {%- if value is number -%}
+    {%- if value > 0 and value < 1 -%}
+      {% set value = value * 100 %}
+    {%- endif -%}
+  {%- else -%}
+    {% set value = value.replace("%", "") %}
+  {%- endif -%}
+
+  {{ value | int }}%
+{%- endmacro -%}
+
+{%- macro squid_refresh_pattern(pattern) -%}
+  {%- if pattern.ignore_case is defined and pattern.ignore_case -%}
+    {%- set ignore_flag = "-i " -%}
+  {%- endif -%}
+
+  refresh_pattern {{ ignore_flag | default("") }}{{ pattern.regex }} {{ pattern.min }} {{ squid_format_percent(pattern.lm_factor) }} {{ pattern.max }}
+{%- endmacro -%}
+
+# General settings
+http_port {{ squid_http_port }}
+maximum_object_size {{ squid_max_object_size }}
+cache_dir {{ squid_cache_dir.type }} {{ squid_cache_dir.path }} {{ squid_cache_dir.args | join(" ") }}
+coredump_dir {{ squid_cache_dir.path }}
+shutdown_lifetime {{ squid_shutdown_lifetime }}
+
+# ACL definitions
+{% for name, acl in squid_acl.iteritems() -%}
+  acl {{ name }} {{ acl.type }} {{ acl.args | join(" ") }}
+{% endfor %}
+
+# Access control
+http_access deny !Safe_ports
+http_access deny CONNECT !SSL_ports
+http_access allow localnet
+http_access allow localhost
+
+{% for name, acl in squid_acl.iteritems() -%}
+  {% if acl.exclusive is defined and acl.exclusive %}
+    http_access deny !{{ name }}
+  {% endif %}
+{% endfor %}
+
+http_access allow localhost manager
+http_access deny manager
+
+http_access deny to_localhost
+http_access deny all
+
+# Refresh patterns
+{% for pattern in squid_refresh_patterns -%}
+  {{ squid_refresh_pattern(pattern) }}
+{% endfor %}

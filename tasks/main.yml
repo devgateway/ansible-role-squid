@@ -1,0 +1,5 @@
+---
+- name: Generate template
+  template:
+    src: squid.conf.j2
+    dest: /tmp/squid.conf
