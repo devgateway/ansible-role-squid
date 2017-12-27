@@ -18,6 +18,16 @@
   refresh_pattern {{ ignore_flag | default("") }}{{ pattern.regex }} {{ pattern.min }} {{ squid_format_percent(pattern.lm_factor) }} {{ pattern.max }}
 {%- endmacro -%}
 
+{%- macro squid_format_access(action, acl) -%}
+
+  http_access {{ action }} {% if acl is string -%}
+    {{ acl }}
+  {%- else -%}
+    {{ acl | join(" ") }}
+  {%- endif %}
+
+{% endmacro -%}
+
 # General settings
 http_port {{ squid_http_port }}
 maximum_object_size {{ squid_max_object_size }}
@@ -30,21 +40,18 @@ shutdown_lifetime {{ squid_shutdown_lifetime }}
   acl {{ name }} {{ acl.type }} {{ acl.args | join(" ") }}
 {% endfor %}
 
-# Access control
-http_access deny !Safe_ports
-http_access deny CONNECT !SSL_ports
-http_access allow localnet
-http_access allow localhost
+# HTTP access
+{% for action in [ "deny", "allow" ] -%}
+  {%- for acl in squid_http_access[action] -%}
+    {{ squid_format_access(action, acl) }}
+  {%- endfor %}
 
-{% for name, acl in squid_acl.iteritems() -%}
-  {% if acl.exclusive is defined and acl.exclusive %}
-    http_access deny !{{ name }}
-  {% endif %}
 {% endfor %}
-
+# Access to Squid manager
 http_access allow localhost manager
 http_access deny manager
 
+# Default security rules
 http_access deny to_localhost
 http_access deny all
 

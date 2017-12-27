@@ -1,22 +1,31 @@
 ---
 squid_acl:
-  localnet:
+  local_nets:
     type: src
     args:
       - 10.0.0.0/8
       - 172.16.0.0/12
       - 192.168.0.0/16
-  connect:
+  connect_method:
     type: method
     args:
       - CONNECT
-    exclusive: true
+  ssl_ports:
+    type: port
+    args:
+      - 443
   safe_ports:
     type: port
     args:
       - 80
       - 443
       - 21
+squid_http_access:
+  deny:
+    - "!safe_ports"
+    - [ connect_method, "!ssl_ports" ]
+  allow:
+    - local_nets
 squid_refresh_patterns:
   - regex: "^ftp:"
     min: 1440
