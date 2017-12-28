@@ -27,20 +27,19 @@ squid_http_access:
   allow:
     - local_nets
 squid_refresh_patterns:
-  - regex: "^ftp:"
-    min: 1440
-    lm_factor: 20
+  - regex: "\\.(deb|rpm|iso|img)$"
+    min: 10080
+    lm_factor: 100
     max: 10080
-  - regex: "(/cgi-bin/|\\?)"
-    ignore_case: true
-    min: 0
-    lm_factor: 0
-    max: 0
+  - regex: "."
+    min: 10
+    lm_factor: 20
+    max: 480
 squid_http_port: 3128
 squid_max_object_size: "200 MB"
 squid_cache_dir:
   type: aufs
-  path: /var/spool/squid3
+  path: /var/spool/squid
   args:
     - 1024
     - 16
